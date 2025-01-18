@@ -18,8 +18,8 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 current_dir = os.path.dirname(__file__)  # Папка, где находится Loading.py
-OUTPUT_FOLDER_JSON = os.path.join(current_dir, "../Data/model_1")
-OUTPUT_FOLDER = os.path.join(current_dir, "../Data/model_1/output_data")
+OUTPUT_FOLDER_JSON = os.path.join(current_dir, "../Data/calculated_models/model_1")
+OUTPUT_FOLDER = os.path.join(current_dir, "../Data/calculated_models/model_1/output_data")
 PARAMETERS_FILE = os.path.join(OUTPUT_FOLDER_JSON, "model_parameters.json")
 
 class ItemWidget(QtWidgets.QPushButton):

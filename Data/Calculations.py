@@ -18,8 +18,8 @@ class Syrio:
     color: QtCore.Qt.GlobalColor
 
 current_dir = os.path.dirname(__file__)
-OUTPUT_FOLDER_JSON = os.path.join(current_dir, "../Data/model_1")
-OUTPUT_FOLDER = os.path.join(current_dir, "../Data/model_1/output_data")
+OUTPUT_FOLDER_JSON = os.path.join(current_dir, "../Data/calculated_models/model_1")
+OUTPUT_FOLDER = os.path.join(current_dir, "../Data/calculated_models/model_1/output_data")
 #PARAMETERS_FILE = os.path.join(OUTPUT_FOLDER_JSON, "model_parameters.json")
 
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)  # Создаёт папку, если её нет

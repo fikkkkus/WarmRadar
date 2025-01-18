@@ -52,8 +52,8 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     # Пути к папкам и файлам
-    OUTPUT_FOLDER_JSON = "model_1"
-    OUTPUT_FOLDER = "model_1/output_data"
+    OUTPUT_FOLDER_JSON = "calculated_models/model_1"
+    OUTPUT_FOLDER = "calculated_models/model_1/output_data"
     PARAMETERS_FILE = os.path.join(OUTPUT_FOLDER_JSON, "model_parameters.json")
 
     # Создаем объект DataHandler
