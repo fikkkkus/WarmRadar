@@ -10,6 +10,10 @@ import os
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog, QPushButton
+from PyQt5.QtWidgets import QMessageBox
+
+# import sys
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from Data.ControllerParams import ControllerParams
 from Data.DataHadler import DataHandler
@@ -17,6 +21,10 @@ from UI.Loading import UI_LoadingWindow
 from UI.MaterialsChoice import Ui_MaterialsChoice
 from UI.PointWarmChoice import Ui_PointWarmChoice
 from UI.FunctionChoice import UI_FunctionChoice
+
+
+import pyvista as pv
+from pyvistaqt import QtInteractor
 
 
 class Ui_WarmRadar(object):
@@ -27,19 +35,21 @@ class Ui_WarmRadar(object):
     def setupUi(self, WarmRadar):
         self.window = WarmRadar
         WarmRadar.setObjectName("WarmRadar")
-        WarmRadar.resize(1398, 740)
+        WarmRadar.resize(1320, 740)
 
         self.centralwidget = QtWidgets.QWidget(WarmRadar)
         self.centralwidget.setObjectName("centralwidget")
 
             # Создаем layout
-        layout = QtWidgets.QVBoxLayout(self.centralwidget)
-        layout.setContentsMargins(0, 0, 0, 0)  # Убираем отступы, если нужно
-        layout.setAlignment(QtCore.Qt.AlignCenter)  # Устанавливаем выравнивание по центру
+        layout = QtWidgets.QHBoxLayout(self.centralwidget)
+        layout.setContentsMargins(20, 0, 0, 0)  # Убираем отступы, если нужно
+        layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)  # Устанавливаем выравнивание по центру
 
             # Создаем globalGroupBox
         self.globalGroupBox = QtWidgets.QGroupBox(self.centralwidget)
         self.globalGroupBox.setFixedSize(750, 690)  # Устанавливаем фиксированные размеры
+        self.globalGroupBox.setGeometry(0, 0, 750, 700)  # Устанавливаем координаты x=0 (левее на 10 пикселей)
+
         self.globalGroupBox.setStyleSheet("#globalGroupBox {"
                                               "    border: 2px solid black;"
                                               "    border-radius: 100px;"
@@ -50,9 +60,10 @@ class Ui_WarmRadar(object):
         self.globalGroupBox.setObjectName("globalGroupBox")
 
             # Добавляем globalGroupBox в layout
-        layout.addWidget(self.globalGroupBox)
+        layout.addWidget(self.globalGroupBox, alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
 
         WarmRadar.setCentralWidget(self.centralwidget)
+
 
         self.widget_2 = QtWidgets.QWidget(self.globalGroupBox)
 
@@ -179,6 +190,9 @@ class Ui_WarmRadar(object):
         self.gridLayout.addWidget(self.label, 1, 1, 1, 1)
 
         self.exportButton = QtWidgets.QPushButton(self.widget_2)
+        self.exportButton.setText("Экспорт")
+        self.exportButton.clicked.connect(self.choose_folder)
+
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -210,6 +224,13 @@ class Ui_WarmRadar(object):
 "")
 
         self.exportButton.setObjectName("exportButton")
+
+        # Текстовое поле (QLineEdit)
+        self.exportPathField = QtWidgets.QLineEdit(self.widget_2)
+        self.exportPathField.setPlaceholderText("Введите название экспорта...")  # Текст-подсказка
+        self.exportPathField.setMinimumWidth(200)  # Минимальная ширина текстового поля
+        self.exportPathField.setObjectName("exportPathField")
+        self.exportPathField.setGeometry(190, 35, 200, 40)
 
         self.gridLayout.addWidget(self.exportButton, 0, 1, 1, 1)
 
@@ -276,7 +297,7 @@ class Ui_WarmRadar(object):
         self.widget1.setStyleSheet("border: 1px solid black; margin-top:8px;")
 
         self.widget1.setObjectName("widget1")
-
+        self.widget1.setGeometry(0, 0, 700, 100)
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout(self.widget1)
 
         self.horizontalLayout_5.setContentsMargins(1, 1, -1, -1)
@@ -386,6 +407,16 @@ class Ui_WarmRadar(object):
 
         self.pressure.setObjectName("doubleSpinBox_5")
 
+        self.pressure.setDecimals(8)
+
+        # Установка минимального, максимального значения и шага
+        self.pressure.setRange(0.0, 999999.9999999)  # Укажите нужные пределы значений
+        self.pressure.setSingleStep(0.01)  # Шаг изменения значения с помощью стрелок
+
+        # Задаем начальное значение (по необходимости)
+        self.pressure.setValue(0.0)
+
+
         self.horizontalLayout_4.addWidget(self.pressure)
 
         self.gridLayout_3.addWidget(self.widget2, 9, 0, 1, 1)
@@ -441,6 +472,16 @@ class Ui_WarmRadar(object):
         self.time.setSizePolicy(sizePolicy)
 
         self.time.setObjectName("doubleSpinBox_7")
+        self.time.setFixedSize(90, 30)  # Устанавливаем фиксированный размер: ширина = 100, высота = 25
+
+        self.time.setDecimals(8)
+
+        # Установка минимального, максимального значения и шага
+        self.time.setRange(0.0, 999999.9999999)  # Укажите нужные пределы значений
+        self.time.setSingleStep(0.01)  # Шаг изменения значения с помощью стрелок
+
+        # Задаем начальное значение (по необходимости)
+        self.time.setValue(0.0)
 
         self.horizontalLayout_6.addWidget(self.time)
 
@@ -489,7 +530,8 @@ class Ui_WarmRadar(object):
         self.time_steps = QtWidgets.QSpinBox(self.widget4)
 
         self.time_steps.setStyleSheet("margin-right:5px;")
-        self.time_steps.setMaximum(999)
+        self.time_steps.setMaximum(999999999)
+        self.time_steps.setFixedSize(50, 30)
         self.time_steps.setObjectName("spinBox")
 
         self.horizontalLayout_8.addWidget(self.time_steps)
@@ -859,6 +901,45 @@ class Ui_WarmRadar(object):
         self.retranslateUi(WarmRadar)
         QtCore.QMetaObject.connectSlotsByName(WarmRadar)
 
+        self.cylinderGroupBox = QtWidgets.QGroupBox(self.centralwidget)
+        self.cylinderGroupBox.setGeometry(800, 0, 500, 700)  # Размеры и позиция окна справа
+        self.cylinderGroupBox.setTitle("Цилиндр на основе параметров")  # Заголовок
+        self.cylinderGroupBox.setStyleSheet("""
+            QGroupBox {
+                font-size: 16px;
+                font-weight: bold;
+                border: 2px solid black;
+                border-radius: 10px;
+                margin-top: 10px;
+                background-color: #f0f0f0;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 5px;
+            }
+        """)
+
+            # Создаем объект QtInteractor (сцену PyVista) и добавляем в GroupBox
+        self.pyvista_widget = QtInteractor(self.cylinderGroupBox)  # Встраиваем интерактор в GroupBox
+        self.pyvista_widget.setGeometry(10, 30, 480, 650)  # Устанавливаем размеры интерактора
+
+            # Добавляем базовый mesh (например, цилиндр)
+        cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=0.5, height=1.0, resolution=50)
+        self.pyvista_widget.add_mesh(cylinder, color="lightblue", opacity=0.8)
+
+            # Обновляем сцену
+        self.pyvista_widget.reset_camera()
+
+    def validate_inputs(self):
+            """Проверяет, что все обязательные параметры заполнены"""
+            errors = self.Controller.validate()  # Вызываем метод validate из ControllerParams
+            if errors:
+                    # Показываем всплывающее окно с ошибками
+                    QMessageBox.warning(self.window, "Ошибка ввода", "\n".join(errors))
+                    return False
+            return True
+
     def updateControls(self):
             # Если выбрана "Задать вручную"
             manual_selected = self.radioButton_2.isChecked()
@@ -880,6 +961,14 @@ class Ui_WarmRadar(object):
             self.startModel.setEnabled(True)
 
     def openMaterialsChoice(self):
+            if self.height.value() == 0:
+                    QtWidgets.QMessageBox.warning(
+                            self.window,
+                            "Ошибка",
+                            "Невозможно задать слои сырья: высота реактора должна быть больше 0."
+                    )
+                    return
+
             self.materialsWindow = QtWidgets.QMainWindow()
             self.ui = Ui_MaterialsChoice()
             self.ui.setupController(self.Controller)  # Передача контроллера
@@ -887,6 +976,14 @@ class Ui_WarmRadar(object):
             self.materialsWindow.show()
 
     def openFunctionChoice(self):
+            if self.time_steps.value() == 0:
+                    QtWidgets.QMessageBox.warning(
+                            self.window,
+                            "Ошибка",
+                            "Невозможно установить функцию нагрева: количество шагов по времени должно быть больше 0."
+                    )
+                    return
+
             self.functionWindow = QtWidgets.QMainWindow()
             self.ui = UI_FunctionChoice()
             self.ui.setupController(self.Controller)  # Передача контроллера
@@ -895,6 +992,9 @@ class Ui_WarmRadar(object):
             self.ui.center_window()
 
     def startSimulation(self):
+            if not self.validate_inputs():
+                return
+
             self.window.close()
 
             self.LoadingForm = QtWidgets.QWidget()
@@ -920,9 +1020,33 @@ class Ui_WarmRadar(object):
                     self.radius.setValue(parameters["Cylinder"]["Radius"])
                     print(parameters)
 
+    def validate_point_warm_params(self):
+            """Проверяет параметры для задания точки подвода тепла и возвращает True, если все корректно."""
+            errors = []
 
+            if self.R.value() == 0 or self.Z.value() == 0 or self.Fi.value() == 0:
+                    errors.append("Размерность сетки (R, Z, Ф) должна быть задана.")
+
+            if self.height.value() == 0:
+                    errors.append("Высота реактора должна быть больше 0.")
+
+            if self.radius.value() == 0:
+                    errors.append("Радиус реактора должен быть больше 0.")
+
+            if errors:
+                    # Отображаем все ошибки в одном сообщении
+                    QtWidgets.QMessageBox.warning(
+                            self.window,
+                            "Ошибка параметров",
+                            "\n".join(errors)  # Все ошибки отображаются в виде списка
+                    )
+                    return False  # Указываем, что параметры некорректны
+            return True  # Параметры корректны
 
     def openPointWarmChoice(self):
+            if not self.validate_point_warm_params():
+                    return  # Если параметры некорректны, прерываем выполнение
+
             self.pointWarmWindow = QtWidgets.QMainWindow()
             self.ui = Ui_PointWarmChoice()
             self.ui.setupController(self.Controller)  # Передача контроллера
@@ -936,19 +1060,13 @@ class Ui_WarmRadar(object):
 
         self.label.setText(_translate("WarmRadar", "Задать вручную"))
 
-        # Экспорт кнопка
-        # Экспорт кнопка
-        self.exportButton = QPushButton(WarmRadar)  # Используем WarmRadar как родитель
-        self.exportButton.setText("Экспорт")
-        self.exportButton.clicked.connect(self.choose_folder)
-
         self.radiusL.setText(_translate("WarmRadar", "Радиус:"))
 
         self.heightL.setText(_translate("WarmRadar", "Высота:"))
 
-        self.pressureL.setText(_translate("WarmRadar", "Температуропроводность:"))
+        self.pressureL.setText(_translate("WarmRadar", "Темпе-ость:"))
 
-        self.timeL.setText(_translate("WarmRadar", "Временной шаг:"))
+        self.timeL.setText(_translate("WarmRadar", "Врем-ой шаг:"))
 
         self.time_stepsL.setText(_translate("WarmRadar", "Шагов по времени:"))
 
@@ -972,14 +1090,14 @@ class Ui_WarmRadar(object):
         self.startModel.setText(_translate("WarmRadar", "Начать моделирование"))
         self.startModel.clicked.connect(self.startSimulation)
 
-
 if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_WarmRadar()
-    ui.setupController(ControllerParams())
-    ui.setupUi(MainWindow)
+        import sys
 
-    MainWindow.show()
-    sys.exit(app.exec_())
+        app = QtWidgets.QApplication(sys.argv)
+        MainWindow = QtWidgets.QMainWindow()
+        ui = Ui_WarmRadar()
+        ui.setupController(ControllerParams())
+        ui.setupUi(MainWindow)
+
+        MainWindow.show()
+        sys.exit(app.exec_())

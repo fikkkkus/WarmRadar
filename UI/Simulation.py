@@ -126,7 +126,7 @@ class ItemWidget(QtWidgets.QPushButton):
 
     def close_pyvista_window(self, event):
         """Метод, вызываемый при закрытии окна PyVista."""
-        self.plotter.close()
+        # self.plotterInter.disable()
         event.accept()  # Принять событие закрытия
 
     def change_image(self, new_image_path):

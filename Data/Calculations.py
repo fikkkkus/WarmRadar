@@ -7,6 +7,9 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtCore import QTimer
 from qtpy import QtCore
 
+# import os
+# sys.path.append(os.path.dirname(__file__))
+
 from funcs import update_central_temperature
 import os
 

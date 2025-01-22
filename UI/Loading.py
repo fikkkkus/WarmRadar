@@ -3,6 +3,9 @@ import sys
 
 from Data.ControllerParams import ControllerParams
 
+# import os
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from UI.Simulation import Ui_Simulation
 from Data.Calculations import *
 

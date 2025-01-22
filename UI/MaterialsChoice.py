@@ -198,7 +198,7 @@ class DragDropGroupBox(QGroupBox):
 
         # Создаем виджет слоя
         layer_widget = QWidget(self.reactorArea)
-        layer_widget.setStyleSheet("background-color: rgba(0, 0, 0); border: 2px solid black;")
+        layer_widget.setStyleSheet("background-color: rgb(0, 0, 0); border: 2px solid black;")
         layer_widget.setGeometry(0, y_pos, self.reactorArea.width(), 2)  # Высота слоя 2px
         layer_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         layer_widget.customContextMenuRequested.connect(
@@ -327,7 +327,7 @@ class PointsScrollerWidget(QtWidgets.QWidget):
         # Создаем слайдер внутри этого виджета
         self.slider = QtWidgets.QSlider(self)
         self.slider.setOrientation(QtCore.Qt.Vertical)  # Вертикальный слайдер
-        self.slider.setRange(0, height * 1000)  # Диапазон слайдера
+        self.slider.setRange(0, int(height) * 1000)  # Диапазон слайдера
         self.slider.setValue(0)  # Начальное значение слайдера
         self.slider.setGeometry(QtCore.QRect(1, 40, 40, 451))  # Размещение слайдера внутри виджета
 

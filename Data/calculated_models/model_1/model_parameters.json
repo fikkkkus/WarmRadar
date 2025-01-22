@@ -1,0 +1,36 @@
+{
+    "Cylinder": {
+        "Radius": 10.0,
+        "Height": 10.0,
+        "Phi": 6.283185307179586
+    },
+    "Grid": {
+        "Nr": 10,
+        "Nz": 10,
+        "Nphi": 10
+    },
+    "Step_Size": {
+        "dr": 1.1111111111111112,
+        "dz": 1.1111111111111112,
+        "dphi": 0.6283185307179586
+    },
+    "Simulation": {
+        "Max_Steps": 10,
+        "dt": 0.10999999999999999,
+        "a": 0.01
+    },
+    "Heat_Point": {
+        "Enabled": false,
+        "Coordinates": null,
+        "Schedule": [
+            [
+                0,
+                500
+            ],
+            [
+                10,
+                500
+            ]
+        ]
+    }
+}
