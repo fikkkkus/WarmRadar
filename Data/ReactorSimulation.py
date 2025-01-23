@@ -132,12 +132,12 @@ class ReactorSimulation:
     def get_new_grid(self):
         return self.grid
 
-    def update_temperature(self, step):
-        from UI.Simulation import OUTPUT_FOLDER
+    def update_temperature(self, step,OUTPUT_DATA_FOLDER):
+
 
         # Загружаем данные температуры для текущего шага
         path_to_step_file = f"temperature_step_{step}.npy"
-        temperature_data = np.load(os.path.join(OUTPUT_FOLDER, path_to_step_file))
+        temperature_data = np.load(os.path.join(OUTPUT_DATA_FOLDER, path_to_step_file))
         # Обновляем значения температуры на сетке
         self.grid["c_values"] = temperature_data.ravel()
         self.cylinder_surface_points_grid["c_values"] = self.grid["c_values"][

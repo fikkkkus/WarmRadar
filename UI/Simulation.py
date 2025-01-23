@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QLabel, QStackedLayout
 
 import sys
 
+from Data.Calculations import get_current_simulation_number, increment_simulation_number
 from Data.DataHadler import DataHandler
 from Data.ReactorSimulation import ReactorSimulation
 
@@ -17,16 +18,19 @@ sys.setrecursionlimit(2000)
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-current_dir = os.path.dirname(__file__)  # Папка, где находится Loading.py
-OUTPUT_FOLDER_JSON = os.path.join(current_dir, "../Data/calculated_models/model_1")
-OUTPUT_FOLDER = os.path.join(current_dir, "../Data/calculated_models/model_1/output_data")
-PARAMETERS_FILE = os.path.join(OUTPUT_FOLDER_JSON, "model_parameters.json")
+
+
+
+
 
 class ItemWidget(QtWidgets.QPushButton):
     """Класс для создания элемента с изображением и связанным PyVista Mesh."""
 
     def setupController(self, Controller):
         self.Controller = Controller
+
+
+
 
     def setupReactorSimulation(self, ReactorSimulation):
         self.reactorSimulation = ReactorSimulation
@@ -55,6 +59,7 @@ class ItemWidget(QtWidgets.QPushButton):
 
         self.pyvista_window = QtWidgets.QWidget()
         self.plotterInter = pvqt.QtInteractor(self.pyvista_window)# отдельное окно
+
 
     def setNewMesh(self):
         #self.pyvista_mesh_slice = self.reactorSimulation.get_slice(self.normal, self.origin)
@@ -153,6 +158,19 @@ class Ui_Simulation(object):
     def setupController(self, Controller):
         self.Controller = Controller
 
+        self.OUTPUT_FOLDER_JSON = None
+        self.OUTPUT_DATA_FOLDER = None
+        self.PARAMETERS_FILE = None
+        self.CURRENT_DIR = os.path.dirname(__file__)  # Папка, где находится Loading.py
+
+
+
+        temp_folder_name = "../Data/calculated_models/" + Controller.simulation_name
+        self.OUTPUT_FOLDER_JSON = os.path.join(self.CURRENT_DIR, temp_folder_name)
+        self.OUTPUT_DATA_FOLDER = os.path.join(self.OUTPUT_FOLDER_JSON, "output_data")
+        print("ggg")
+        self.PARAMETERS_FILE = os.path.join(self.OUTPUT_FOLDER_JSON, "model_parameters.json")
+
     def setupUi(self, Form):
         Form.setObjectName("Form")
         Form.resize(1173, 705)
@@ -205,7 +223,7 @@ class Ui_Simulation(object):
 
         self.plotter.setGeometry(0, 0, 831, 701)
 
-        self.data_handler = DataHandler(output_folder=OUTPUT_FOLDER, parameters_file=PARAMETERS_FILE)
+        self.data_handler = DataHandler(output_folder=self.OUTPUT_DATA_FOLDER, parameters_file=self.PARAMETERS_FILE)
         # Инициализация симуляции
         self.reactorSimulation = ReactorSimulation(self.data_handler)
 
@@ -293,7 +311,7 @@ class Ui_Simulation(object):
         QtCore.QMetaObject.connectSlotsByName(Form)
 
     def update_temperature(self, value):
-        self.reactorSimulation.update_temperature(value)
+        self.reactorSimulation.update_temperature(value,self.OUTPUT_DATA_FOLDER)
         self.plotter.update_scalars(self.reactorSimulation.interpolated.point_data['c_values'], render=True)
 
         for i in range(self.verticalLayout.count()):

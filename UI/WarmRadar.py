@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QMessageBox
 
 # import sys
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from Data.Calculations import get_current_simulation_number, increment_simulation_number
 from Data.ControllerParams import ControllerParams
 from Data.DataHadler import DataHandler
 from UI.Loading import UI_LoadingWindow
@@ -227,7 +227,7 @@ class Ui_WarmRadar(object):
 
         # Текстовое поле (QLineEdit)
         self.exportPathField = QtWidgets.QLineEdit(self.widget_2)
-        self.exportPathField.setPlaceholderText("Введите название экспорта...")  # Текст-подсказка
+        self.exportPathField.setPlaceholderText("Введите название моделирования...")  # Текст-подсказка
         self.exportPathField.setMinimumWidth(200)  # Минимальная ширина текстового поля
         self.exportPathField.setObjectName("exportPathField")
         self.exportPathField.setGeometry(190, 35, 200, 40)
@@ -898,6 +898,9 @@ class Ui_WarmRadar(object):
         self.Fi.valueChanged.connect(lambda val: setattr(self.Controller, 'grid_size',
                                                          (self.R.value(), self.Z.value(), val)))
 
+
+        self.exportPathField.textChanged.connect(lambda val: setattr(self.Controller, 'simulation_name', val))
+
         self.retranslateUi(WarmRadar)
         QtCore.QMetaObject.connectSlotsByName(WarmRadar)
 
@@ -994,7 +997,9 @@ class Ui_WarmRadar(object):
     def startSimulation(self):
             if not self.validate_inputs():
                 return
-
+            if self.Controller.simulation_name is None:
+                    self.Controller.simulation_name ="name_" + str(get_current_simulation_number())
+                    increment_simulation_number()
             self.window.close()
 
             self.LoadingForm = QtWidgets.QWidget()
@@ -1009,16 +1014,36 @@ class Ui_WarmRadar(object):
             folder = QFileDialog.getExistingDirectory(None, "Выберите папку", default_path)
 
             if folder:
-                    print(f"Выбрана папка: {folder}")
-                    parameters_file = os.path.join(folder, "model_parameters.json")
+                print(f"Выбрана папка: {folder}")
+                parameters_file = os.path.join(folder, "model_parameters.json")
+                # Передаем WarmRadar в DataHandler
+                data_handler = DataHandler(folder, parameters_file)
+                parameters = data_handler.load_parameters()
+                # Теперь вы можете работать с объектом WarmRadar
+                self.radius.setValue(parameters["Cylinder"]["Radius"])
+                self.height.setValue(parameters["Cylinder"]["Height"])
 
-                    # Передаем WarmRadar в DataHandler
-                    data_handler = DataHandler(folder, parameters_file)
-                    parameters = data_handler.load_parameters()
 
-                    # Теперь вы можете работать с объектом WarmRadar
-                    self.radius.setValue(parameters["Cylinder"]["Radius"])
-                    print(parameters)
+                self.pressure.setValue(parameters["Simulation"]["a"])
+                self.time.setValue(parameters["Simulation"]["dt"])
+                self.time_steps.setValue(parameters["Simulation"]["Max_Steps"])
+                self.Controller.items_and_layers = parameters["Simulation"]["items_and_layers"]
+
+                self.R.setValue(parameters["Grid"]["Nr"])
+                self.Z.setValue(parameters["Grid"]["Nz"])
+                self.Fi.setValue(parameters["Grid"]["Nphi"])
+
+                self.Controller.heat_function=parameters["Heat_Point"]["Schedule"]
+
+                #self.functionWarmButton.setValue(parameters["Heat_Point"]["Schedule"])
+                # # Включить или отключить кнопки
+
+                # self.layersMaterialButton.setEnabled(manual_selected)
+                # self.pointWarmButton.setEnabled(manual_selected)
+                # self.functionWarmButton.setEnabled(manual_selected)
+                #
+                # # Кнопка "Начать моделирование" всегда активна
+                # self.startModel.setEnabled(True)
 
     def validate_point_warm_params(self):
             """Проверяет параметры для задания точки подвода тепла и возвращает True, если все корректно."""

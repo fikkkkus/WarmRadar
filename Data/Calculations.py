@@ -3,7 +3,7 @@ import json  # Для удобного хранения параметров в 
 from dataclasses import dataclass
 
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
 from PyQt5.QtCore import QTimer
 from qtpy import QtCore
 
@@ -13,19 +13,86 @@ from qtpy import QtCore
 from funcs import update_central_temperature
 import os
 
-@dataclass
-class Syrio:
-    name: str
-    percentage: float
-    density: float
-    color: QtCore.Qt.GlobalColor
 
-current_dir = os.path.dirname(__file__)
-OUTPUT_FOLDER_JSON = os.path.join(current_dir, "../Data/calculated_models/model_1")
-OUTPUT_FOLDER = os.path.join(current_dir, "../Data/calculated_models/model_1/output_data")
-#PARAMETERS_FILE = os.path.join(OUTPUT_FOLDER_JSON, "model_parameters.json")
+from UI.MaterialsChoice import Syrio
 
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)  # Создаёт папку, если её нет
+
+# Путь к файлу
+FILE_PATH_CONFIG = '../config.json'
+
+# Инициализация файла с начальным номером моделирования нужно куда то перенести это общие настройки приложения
+def initialize_file():
+    data = {"current_simulation_number": 1}
+    with open(FILE_PATH_CONFIG, 'w') as file:
+        json.dump(data, file, indent=4)
+
+# Чтение текущего номера моделирования
+def get_current_simulation_number():
+    with open(FILE_PATH_CONFIG, 'r') as file:
+        data = json.load(file)
+    return data["current_simulation_number"]
+
+# Увеличение номера моделирования на 1 и сохранение в файл
+def increment_simulation_number():
+    with open(FILE_PATH_CONFIG, 'r') as file:
+        data = json.load(file)
+    data["current_simulation_number"] += 1
+    with open(FILE_PATH_CONFIG, 'w') as file:
+        json.dump(data, file, indent=4)
+
+
+CURRENT_DIR = os.path.dirname(__file__)
+OUTPUT_FOLDER_JSON=None # переделать - эти глобальные переменные не являются константами и иеняются в коде
+OUTPUT_DATA_FOLDER = None
+
+
+#os.makedirs(OUTPUT_DATA_FOLDER, exist_ok=True)  # Создаёт папку, если её нет
+
+
+# Функция для фильтрации объектов, которые не сериализуемы в JSON
+def filter_non_serializable(obj):
+    # Если объект является QWidget или Syrio, возвращаем их в сериализуемом виде
+    print(f"Тип объекта: {type(obj)}")
+    if isinstance(obj, QWidget):
+        return None
+
+    elif isinstance(obj, Syrio):
+        return obj.to_dict()  # Сериализуем объект Syrio в словарь
+
+    # Если объект - это список, обрабатываем каждый элемент
+    elif isinstance(obj, list):
+        return [filter_non_serializable(item) for item in obj]
+
+    # Если объект - это кортеж, обрабатываем каждый элемент, сохраняя структуру кортежа
+    elif isinstance(obj, tuple):
+        return tuple(filter_non_serializable(item) for item in obj)
+
+    # Если это словарь, обрабатываем пары ключ-значение
+    elif isinstance(obj, dict):
+        return {key: filter_non_serializable(value) for key, value in obj.items()}
+
+    # В остальных случаях возвращаем объект как есть (например, строки или числа)
+    else:
+        return obj
+
+
+# Функция для десериализации данных и восстановления объектов
+def restore_object(data):
+    # Если данные представляют собой список или кортеж, восстанавливаем каждый элемент
+    if isinstance(data, list):
+        return [restore_object(item) for item in data]
+    elif isinstance(data, tuple):
+        return tuple(restore_object(item) for item in data)
+
+    # Если это словарь, пытаемся восстановить объекты типа Syrio
+    elif isinstance(data, dict):
+        if 'name' in data and 'percentage' in data and 'density' in data:
+            return Syrio.from_dict(data)  # Восстанавливаем объект Syrio
+        else:
+            return {key: restore_object(value) for key, value in data.items()}
+
+    # Если это не объект, просто возвращаем данные
+    return data
 
 def save_model_parameters(filename, parameters):
     """Сохраняет параметры модели в файл."""
@@ -34,8 +101,9 @@ def save_model_parameters(filename, parameters):
     print(f"Model parameters saved to {filename}")
 
 def save_temperature_to_file(step, temperature_data, file_prefix="temperature_step"):
+    global  OUTPUT_DATA_FOLDER
     """Сохраняет температуру на текущем шаге в файл."""
-    filename = os.path.join(OUTPUT_FOLDER, f"{file_prefix}_{step}.npy")
+    filename = os.path.join(OUTPUT_DATA_FOLDER, f"{file_prefix}_{step}.npy")
     np.save(filename, temperature_data)
     #print(f"Saved step {step} to {filename}")
 
@@ -101,7 +169,10 @@ class Simulation:
 
         # Структура слоев сырья
         self.layers = Controller.items_and_layers
-        self.a_distribution = calculate_a_distribution(self.layers, self.Z, self.Nz)
+        self.a_distribution = calculate_a_distribution(restore_object(self.layers), self.Z, self.Nz)
+        self.items_and_layers_serializable =filter_non_serializable(self.layers)
+        print(self.items_and_layers_serializable)
+
 
         # Переменные для расчетов
         self.T = np.zeros((self.Nr - 1, self.Nphi, self.Nz))
@@ -119,21 +190,39 @@ class Simulation:
         else:
             self.T[-1, :, :] = interpolated_temperature
 
+
+
+        #перед сохранением слои сырья в сериализуемый вид
+
         # Сохранение параметров модели
         model_parameters = {
             "Cylinder": {"Radius": self.R, "Height": self.Z, "Phi": self.PHI},
             "Grid": {"Nr": self.Nr, "Nz": self.Nz, "Nphi": self.Nphi},
             "Step_Size": {"dr": self.dr, "dz": self.dz, "dphi": self.dphi},
-            "Simulation": {"Max_Steps": self.max_steps, "dt": self.dt, "a": self.a},
+            "Simulation": {"Max_Steps": self.max_steps, "dt": self.dt, "a": self.a,"items_and_layers":self.items_and_layers_serializable},
             "Heat_Point": {
                 "Enabled": self.heat_point_enabled,
                 "Coordinates": self.heat_point_coordinates_json,
                 "Schedule": self.heat_schedule
             },
+
         }
         print("Параметры сохранены")
+        global OUTPUT_FOLDER_JSON, OUTPUT_DATA_FOLDER, CURRENT_DIR
+
+        temp_folder_name = "calculated_models/" + Controller.simulation_name
+        OUTPUT_FOLDER_JSON = os.path.join(CURRENT_DIR, temp_folder_name)
+
+        # Создаём папку, если её не существует
+        os.makedirs(OUTPUT_FOLDER_JSON, exist_ok=True)
+
+        # Сохраняем параметры модели
         save_model_parameters(os.path.join(OUTPUT_FOLDER_JSON, "model_parameters.json"), model_parameters)
 
+
+        OUTPUT_DATA_FOLDER = os.path.join(OUTPUT_FOLDER_JSON, "output_data")
+        if not os.path.exists(OUTPUT_DATA_FOLDER):
+            os.makedirs(OUTPUT_DATA_FOLDER)
 
     def calculate(self):
         while self.current_step <= self.max_steps:

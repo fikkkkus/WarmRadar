@@ -12,6 +12,8 @@ class ControllerParams:
         self.heat_source = None  # Точка подвода тепла (r, z, φ)
         self.grid_size = (0.0, 0.0, 0.0)  # Размер сетки (r, z, φ)
 
+        self.simulation_name = None
+
     def validate(self):
         """Проверяет параметры и возвращает список ошибок"""
         errors = []
