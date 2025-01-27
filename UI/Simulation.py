@@ -39,12 +39,14 @@ class ItemWidget(QtWidgets.QPushButton):
         self.interpolated = self.cylinder.interpolate(self.pyvista_mesh_slice, radius=0.1)
         self.interpolated.set_active_scalars("c_values")
         self.plotter.add_mesh(self.interpolated, scalars='c_values', opacity=1, cmap='coolwarm',
-                               name='interpolated_mesh')
+                                name='interpolated_mesh')
+
+
         self.plotterInter.add_mesh(self.interpolated, scalars='c_values', opacity=1, cmap='coolwarm',
                               name='interpolated_mesh')
         self.setNewMesh()
 
-    def __init__(self, normal, origin, parent=None):
+    def __init__(self, normal, origin,parent=None, points_for_slice=None ):
         super().__init__(parent)
         self.setFixedSize(200, 200)
         self.cylinder=None
@@ -53,6 +55,7 @@ class ItemWidget(QtWidgets.QPushButton):
         self.grid_T = None
         self.normal = normal
         self.origin = origin
+        self.points_for_slice=points_for_slice
 
         self.clicked.connect(self.on_click)
         self.plotter = pv.Plotter(off_screen=True)#скриншот
@@ -84,7 +87,9 @@ class ItemWidget(QtWidgets.QPushButton):
 
 
         print("234234")
-        self.reactorSimulation.rotate_slice_to_camera(self.plotter, self.normal, self.origin)
+        print(self.points_for_slice)
+
+        self.reactorSimulation.rotate_slice_to_camera(self.plotter, self.points_for_slice)
         image = self.reactorSimulation.plotter_to_qimage(self.plotter)
         qimage = QImage(image[0], image[1], image[2], image[3], QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(qimage)
@@ -104,6 +109,7 @@ class ItemWidget(QtWidgets.QPushButton):
         """Обработка клика по элементу, открываем окно PyVista."""
         self.show_pyvista_window()
 
+    # окно мини среза
     def show_pyvista_window(self):
         """Создание окна PyVista внутри PyQt при клике на элемент."""
         # Создаем окно с PyVista
@@ -118,7 +124,7 @@ class ItemWidget(QtWidgets.QPushButton):
             # Если Mesh не установлен, по умолчанию создаем сферу
             self.pyvista_mesh_slice = pv.Sphere()
 
-        # # Добавляем Mesh в окно PyVista
+        # Добавляем Mesh в окно PyVista
         # self.plotterInter.add_mesh(self.pyvista_mesh_slice, scalars="c_values", cmap="coolwarm",
         #                            point_size=10,
         #                            render_points_as_spheres=True, name="c_m", show_scalar_bar=False)

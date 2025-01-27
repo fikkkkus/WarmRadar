@@ -20,6 +20,7 @@ class Ui_Slice(object):
 
         self.normal = None
         self.origin = None
+        self.points_for_slice=None
 
         # Create group box container
         self.groupBox6 = QtWidgets.QGroupBox(Form)
@@ -67,6 +68,7 @@ class Ui_Slice(object):
 
                     self.origin = points_for_slice[0]
                     self.normal = normal_vector_normalized
+                    self.points_for_slice=points_for_slice
 
             else:
                 print("Не удалось выбрать точку.")
@@ -191,7 +193,7 @@ class Ui_Slice(object):
         self.layoutInsert = verticalLayout
 
     def add_new_item(self):
-        new_item = ItemWidget(self.normal, self.origin, self.widgetInsert)
+        new_item = ItemWidget(self.normal, self.origin, self.widgetInsert,self.points_for_slice)
         new_item.setupReactorSimulation(self.reactorSimulation)
 
         self.layoutInsert.insertWidget(0, new_item)

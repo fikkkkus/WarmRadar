@@ -35,8 +35,8 @@ class ReactorSimulation:
         r = np.linspace(dr, R, Nr - 1)
         z = np.linspace(0, Z, Nz)
         phi = np.linspace(0, PHI, Nphi, endpoint=False)
-
         R_grid, PHI_grid, Z_grid = np.meshgrid(r, phi, z, indexing="ij")
+
         X = R_grid * np.cos(PHI_grid)
         Y = R_grid * np.sin(PHI_grid)
         points = np.column_stack((X.ravel(), Y.ravel(), Z_grid.ravel()))
@@ -51,7 +51,7 @@ class ReactorSimulation:
         self.grid["Z"] = Z_grid.ravel()
 
         # Создание цилиндра для отображения поверхности
-        self.cylinder = pv.Cylinder(radius=R, height=Z, resolution=50, center=(0, 0, Z / 2), direction=(0, 0, 1))
+        self.cylinder = pv.Cylinder(radius=R, height=Z, resolution=100, center=(0, 0, Z / 2), direction=(0, 0, 1))
 
         # Получаем точки на боковой поверхности цилиндра и основаниях
         self.cylinder_surface_points_grid = self.get_cylinder_surface_points(self.grid, R, Z)
@@ -313,28 +313,59 @@ class ReactorSimulation:
 
         return qimage
 
-    def rotate_slice_to_camera(self, plotter, normal, origin):
-        """Поворачивает камеру к срезу
+    import numpy as np
+
+    def rotate_slice_to_camera(self, plotter, points_for_slice):
         """
-        normal = np.array(normal)
+        Поворачивает камеру так, чтобы срез был виден лицом к пользователю.
+        Учитывает центр цилиндра для более точного расположения камеры.
 
-        normal = normal / np.linalg.norm(normal)  # Нормируем вектор нормали
+        points_for_slice: list из 3 точек (np.ndarray или список)
+        center_cylinder: координаты центра цилиндра [x, y, z]
+        """
 
-        # Фиксированное расстояние от камеры до origin
-        fixed_distance = 4  # Например, 5 единиц
+        # Центр цилиндра (предположим, что центр цилиндра известен)
+        center_cylinder = [0, 0, self.Z / 2]
 
-        # Позиция камеры, находящейся на расстоянии fixed_distance от origin вдоль нормали
-        camera_position = np.array(origin) + fixed_distance * normal
+        # Убедимся, что точки заданы правильно
+        points = np.array(points_for_slice)
+        if points.shape != (3, 3):
+            raise ValueError("points_for_slice должен содержать ровно три точки в формате (3, 3).")
 
-        up_vector = np.array([0, 1, 0]) if np.allclose(normal, [0, 0, 1]) else [0, 0, 1]
+        # Геометрический центр среза (усреднение координат точек среза)
+        mean_points = np.mean(points, axis=0)
 
-        # Установка камеры
+        # Вычисление вектора сдвига от центра среза к центру цилиндра
+        shift_vector = np.array(center_cylinder) - mean_points
+
+        # Сдвигаем все точки среза в центр цилиндра
+        shifted_points = points + shift_vector
+
+        # Векторы, определяющие плоскость среза
+        v1 = shifted_points[1] - shifted_points[0]
+        v2 = shifted_points[2] - shifted_points[0]
+
+        # Нормаль к плоскости
+        normal = np.cross(v1, v2)
+        normal = normal / np.linalg.norm(normal)
+
+        # Геометрический центр среза после сдвига
+        center_slice = np.mean(shifted_points, axis=0)
+
+        # Камера на фиксированном расстоянии вдоль нормали
+        fixed_distance = 10
+        camera_position = center_slice + fixed_distance * normal
+
+        # Вектор "вверх" (по умолчанию ось Y или Z, если нормаль к плоскости близка к оси Z)
+        up_vector = np.array([0, 1, 0]) if np.allclose(normal, [0, 0, 1], atol=1e-3) else [0, 0, 1]
+
+        # Устанавливаем положение камеры
         plotter.camera_position = [
             camera_position.tolist(),  # Позиция камеры
-            origin,  # Фокус камеры (куда она смотрит)
-            up_vector
+            center_slice.tolist(),  # Точка, на которую камера смотрит
+            up_vector  # Вектор "вверх"
         ]
 
-        # Настройка угла обзора (если требуется фиксировать видимый масштаб)
-        plotter.camera.view_angle = 30  # Например, 30 градусов
+        # Опционально: настройка угла обзора
+        #plotter.camera.view_angle = 30  # Угол обзора, например, 30 градусов
 
