@@ -1,0 +1,60 @@
+{
+    "Cylinder": {
+        "Radius": 1.0,
+        "Height": 1.0,
+        "Phi": 6.283185307179586
+    },
+    "Grid": {
+        "Nr": 10,
+        "Nz": 20,
+        "Nphi": 20
+    },
+    "Step_Size": {
+        "dr": 0.1111111111111111,
+        "dz": 0.05263157894736842,
+        "dphi": 0.3141592653589793
+    },
+    "Simulation": {
+        "Max_Steps": 100,
+        "dt": 0.003,
+        "a": 0.01,
+        "items_and_layers": [
+            [
+                "layer",
+                0.0,
+                null,
+                null
+            ],
+            [
+                "item",
+                0.5844444444444444,
+                null,
+                {
+                    "name": "\u0421\u044b\u0440\u044c\u0451 7",
+                    "percentage": 45.0,
+                    "density": 1.9
+                }
+            ],
+            [
+                "layer",
+                1.0,
+                null,
+                null
+            ]
+        ]
+    },
+    "Heat_Point": {
+        "Enabled": false,
+        "Coordinates": null,
+        "Schedule": [
+            [
+                0,
+                500
+            ],
+            [
+                100,
+                500
+            ]
+        ]
+    }
+}
